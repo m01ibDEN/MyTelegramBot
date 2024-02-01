@@ -80,7 +80,6 @@ public class Game {
         int number = random.nextInt(freeSqrs.size());
         number = Integer.parseInt(freeSqrs.toArray()[number].toString());
         setSquare(number, getO());
-        System.out.println(number);
     }
 
     public static String end() {

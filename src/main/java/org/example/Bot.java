@@ -7,19 +7,23 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
+import java.util.HashMap;
 import java.util.Objects;
 
 public class Bot extends TelegramLongPollingBot {
 
+    HashMap<String, String> users = new HashMap<>();
     boolean isXO = false;
     String mess = "Это игра в крестики-нолики внутри моего бота в телеграм\n"
             + "Клетки пронумерованы от 1 до 9 слева сверху до права снизу\n"
             + "Чтобы сходить вы должны проосто написать номер свободной клетки)\n";
-    int move;
+    int move = 1;
 
     @Override
     public void onUpdateReceived(Update update) {
+
         var msg = update.getMessage();
+        users.put(msg.getChatId().toString(), msg.getFrom().getUserName());
 
         if (isXO) {
             if(move == 1) {
@@ -99,13 +103,7 @@ public class Bot extends TelegramLongPollingBot {
             try {
                 Game.setup();
                 execute(SendMessage.builder().chatId(msg.getChatId()).text(mess).build());
-
                 execute(SendMessage.builder().chatId(msg.getChatId()).text("Хотите сходить первым?(y/n)").build());
-
-                move = 1;
-
-                //Game.botAction();
-                //execute(SendMessage.builder().chatId(msg.getChatId()).text(Game.getGrid()).build());
             } catch (TelegramApiException e) {
                 throw new RuntimeException(e);
             }

@@ -12,6 +12,20 @@ public class Game {
 
     private static final HashSet<Integer> freeSqrs = new HashSet<>();
 
+    private static boolean isXOWithBot = false;
+
+    private static boolean isXOWithUser = false;
+
+    private static boolean agreement = false;
+
+    private static long idByGamer1 = 0;
+
+    private static long idByGamer2 = 0;
+
+    private static int move = 1;
+
+    private static boolean inputUser = false;
+
     public static String getX() {
         return x;
     }
@@ -22,6 +36,70 @@ public class Game {
 
     public static String getGrid() {
         return grid;
+    }
+
+    public static boolean isXOWithBot() {
+        return isXOWithBot;
+    }
+
+    public static void setXOWithBot(boolean XOWithBot) {
+        isXOWithBot = XOWithBot;
+    }
+
+    public static boolean isXOWithUser() {
+        return isXOWithUser;
+    }
+
+    public static void setXOWithUser(boolean XOWithUser) {
+        isXOWithUser = XOWithUser;
+    }
+
+    public static boolean isAgreement() {
+        return agreement;
+    }
+
+    public static void setAgreement(boolean agreement) {
+        Game.agreement = agreement;
+    }
+
+    public static long getIdByGamer1() {
+        return idByGamer1;
+    }
+
+    public static void setIdByGamer1(long idByGamer1) {
+        Game.idByGamer1 = idByGamer1;
+    }
+
+    public static long getIdByGamer2() {
+        return idByGamer2;
+    }
+
+    public static void setIdByGamer2(long idByGamer2) {
+        Game.idByGamer2 = idByGamer2;
+    }
+
+    public static String getMess() {
+        return """
+                Это игра в крестики-нолики внутри моего бота в телеграм
+                Клетки пронумерованы от 1 до 9 слева сверху до права снизу
+                Чтобы сходить вы должны проосто написать номер свободной клетки).
+                """;
+    }
+
+    public static int getMove() {
+        return move;
+    }
+
+    public static void setMove(int move) {
+        Game.move = move;
+    }
+
+    public static boolean isInputUser() {
+        return inputUser;
+    }
+
+    public static void setInputUser(boolean inputUser) {
+        Game.inputUser = inputUser;
     }
 
     public static void setSquare(int number, String symbol) {
@@ -36,7 +114,6 @@ public class Game {
             case 3:
                 grid = grid.substring(0, 10) + symbol + grid.substring(11);
                 break;
-
             case 4:
                 grid = grid.substring(0, 28) + symbol + grid.substring(29);
                 break;
@@ -46,7 +123,6 @@ public class Game {
             case 6:
                 grid = grid.substring(0, 36) + symbol + grid.substring(37);
                 break;
-
             case 7:
                 grid = grid.substring(0, 54) + symbol + grid.substring(55);
                 break;
@@ -70,7 +146,6 @@ public class Game {
                 ----+---+---
                   7 | 8 | 9\s
                 """;
-
     }
 
     public static void botAction() {
@@ -126,20 +201,5 @@ public class Game {
         }
 
         return null;
-    }
-
-    public static void main(String[] args) {
-        setup();
-        for (int i = 0; i < getGrid().length(); i++) {
-            if (Character.isDigit(getGrid().toCharArray()[i])) {
-                System.out.print(getGrid().toCharArray()[i] + " ");
-            }
-        }
-        System.out.println("\n");
-        for (int i = 0; i < getGrid().length(); i++) {
-            if (Character.isDigit(getGrid().toCharArray()[i])) {
-                System.out.print(i + " ");
-            }
-        }
     }
 }

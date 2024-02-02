@@ -11,31 +11,30 @@ import java.util.*;
 
 public class Bot extends TelegramLongPollingBot {
     static HashMap<Long, String> users = new HashMap<>();
-    boolean isXOWithBot = false;
-    boolean isXOWithUser = false;
-    boolean agreement = false;
-    long idByGamer1 = 0, idByGamer2 = 0;
-    String mess = """
-            Это игра в крестики-нолики внутри моего бота в телеграм
-            Клетки пронумерованы от 1 до 9 слева сверху до права снизу
-            Чтобы сходить вы должны проосто написать номер свободной клетки).
-            """;
-    int move = 1;
-    boolean inputUser = false;
 
     @Override
     public void onUpdateReceived(Update update) {
         var msg = update.getMessage();
         users.put(msg.getChatId(), msg.getFrom().getUserName());
 
-        System.out.println(users.toString());
-        if (isXOWithBot) {
-            if(move == 1) {
+        if (msg.isCommand() && msg.getText().equals("/start")) {
+            sendMessage(msg.getChatId(), "Привет))");
+        }
+
+        else if (msg.isCommand() && msg.getText().equals("/xo_with_bot")) {
+            Game.setXOWithBot(true);
+            Game.setup();
+            sendMessage(msg.getChatId(), Game.getMess());
+            sendMessage(msg.getChatId(), "Хотите сходить первым?(y/n)");
+        }
+
+        else if (Game.isXOWithBot()) {
+            if(Game.getMove() == 1) {
                 if (Character.isDigit(msg.getText().toCharArray()[0])) {
                     Game.setSquare(Integer.parseInt(msg.getText()), Game.getX());
                     Game.botAction();
                     sendMessage(msg.getChatId(), Game.getGrid());
-                    move++;
+                    Game.setMove(Game.getMove() + 1);
                 }
 
                 if (msg.getText().equals("y")) {
@@ -46,7 +45,7 @@ public class Bot extends TelegramLongPollingBot {
                 if (msg.getText().equals("n")) {
                     Game.botAction();
                     sendMessage(msg.getChatId(), Game.getGrid());
-                    move++;
+                    Game.setMove(Game.getMove() + 1);
                 }
             }
 
@@ -56,7 +55,7 @@ public class Bot extends TelegramLongPollingBot {
                 sendMessage(msg.getChatId(), Game.getGrid());
 
                 if (Game.end() != null) {
-                    move = 1;
+                    Game.setMove(1);
 
                     if(Objects.equals(Game.end(), "user")) {
                         sendMessage(msg.getChatId(), "Вы выиграли!");
@@ -69,22 +68,56 @@ public class Bot extends TelegramLongPollingBot {
                     else if (Objects.equals(Game.end(), "none")) {
                         sendMessage(msg.getChatId(), "Ничья!");
                     }
-                    isXOWithBot = false;
+                    Game.setXOWithBot(false);
                 }
             }
         }
 
+        else if (msg.isCommand() && msg.getText().equals("/xo_with_user")) {
+            sendMessage(msg.getChatId(), Game.getMess());
+            Game.setXOWithUser(true);
+            Game.setup();
+            sendMessage(msg.getChatId(), users.values().toString());
+            sendMessage(msg.getChatId(),
+                    """
+                    Введите имя пользователя, с которым хотите сыграть.
+                    UPD: Пользователь должен также выбрать этот режим игры в меню.
+                    """);
+            Game.setInputUser(true);
+        }
 
-        if (isXOWithUser) {
-            if (agreement) {
+        else if (Game.isXOWithUser()) {
+            if (Game.isAgreement()) {
                 if (Character.isDigit(msg.getText().toCharArray()[0])) {
-                    if (msg.getChatId() == idByGamer1) {
+                    if (msg.getChatId() == Game.getIdByGamer1()) {
                         Game.setSquare(Integer.parseInt(msg.getText()), Game.getX());
-                        sendMessage(idByGamer2, Game.getGrid());
+                        sendMessage(Game.getIdByGamer2(), Game.getGrid());
                     }
-                    else {
+
+                    else if (msg.getChatId() == Game.getIdByGamer2()){
                         Game.setSquare(Integer.parseInt(msg.getText()), Game.getO());
-                        sendMessage(idByGamer1, Game.getGrid());
+                        sendMessage(Game.getIdByGamer1(), Game.getGrid());
+                    }
+
+                    if (Game.end() != null) {
+                        Game.setMove(1);
+
+                        if(Objects.equals(Game.end(), "user")) {
+                            sendMessage(Game.getIdByGamer1(), "Вы выиграли!");
+                            sendMessage(Game.getIdByGamer2(), "Вы проиграли(");
+                        }
+
+                        else if (Objects.equals(Game.end(), "bot")) {
+                            sendMessage(Game.getIdByGamer2(), "Вы выиграли!");
+                            sendMessage(Game.getIdByGamer1(), "Вы проиграли(");
+                        }
+
+                        else if (Objects.equals(Game.end(), "none")) {
+                            sendMessage(Game.getIdByGamer1(), "Ничья!");
+                            sendMessage(Game.getIdByGamer2(), "Ничья!");
+                        }
+
+                        Game.setXOWithBot(false);
                     }
                 }
 
@@ -92,43 +125,32 @@ public class Bot extends TelegramLongPollingBot {
                     sendMessage(msg.getChatId(), Game.getGrid());
                     sendMessage(msg.getChatId(), "Введите номер клетки.");
                 }
+
+                if (msg.getText().equals("n")) {
+                    sendMessage(Game.getIdByGamer2(), "Отказано(");
+                }
             }
 
-            if (inputUser) {
+            if (Game.isInputUser()) {
                 String username = msg.getText();
                 Long chatId = findIdByUserName(username);
+
                 if (chatId != null) {
                     sendMessage(chatId, "С вами хочет поиграть " + msg.getFrom().getUserName());
                     sendMessage(chatId, "Вы согласны?(y/n)");
-                    inputUser = false;
-                    agreement = true;
-                    idByGamer1 = chatId;
-                    idByGamer2 = msg.getChatId();
-                } else {
+                    Game.setInputUser(false);
+                    Game.setAgreement(true);
+                    Game.setIdByGamer1(chatId);
+                    Game.setIdByGamer2(msg.getChatId());
+
+                } else if (msg.getChatId() != Game.getIdByGamer2()) {
                     sendMessage(msg.getChatId(), "Пользователь с таким именем не найден.");
                 }
             }
         }
 
-        if (msg.isCommand() && msg.getText().equals("/xo_with_bot")) {
-            isXOWithBot = true;
-            Game.setup();
-            sendMessage(msg.getChatId(), mess);
-            sendMessage(msg.getChatId(), "Хотите сходить первым?(y/n)");
-        }
-
-
-
-        if (msg.isCommand() && msg.getText().equals("/xo_with_user")) {
-            isXOWithUser = true;
-            Game.setup();
-            sendMessage(msg.getChatId(), users.values().toString());
-            sendMessage(msg.getChatId(),
-                                """
-                                Введите имя пользователя, с которым хотите сыграть.
-                                UPD: Пользователь должен также выбрать этот режим игры в меню.
-                                """);
-            inputUser = true;
+        else {
+            sendMessage(msg.getChatId(), "Не понятно(");
         }
     }
 
@@ -148,15 +170,11 @@ public class Bot extends TelegramLongPollingBot {
         sendMessage.setText(textToSend);
         try {
             execute(sendMessage);
-        } catch (TelegramApiException ignored) {
-
-        }
+        } catch (TelegramApiException ignored) {}
     }
 
     public static Long findIdByUserName(String name) {
-
         Set<Map.Entry<Long, String>> entrySet = users.entrySet();
-
         for (Map.Entry<Long, String> pair : entrySet) {
             if (name.equals(pair.getValue())) {
                 System.out.println("+");

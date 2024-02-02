@@ -156,12 +156,12 @@ public class Bot extends TelegramLongPollingBot {
 
     @Override
     public String getBotUsername() {
-        return("justBot");
+        return("XOBot");
     }
 
     @Override
     public String getBotToken() {
-        return "6207008509:AAFDFEobMskwz3Rt5GNo59INrid5a8BhhIw";
+        return "6975035506:AAEn9PJVtwOM7fqooA5GNT-9Mie_SXIPdBQ";
     }
 
     private void sendMessage(Long chatId, String textToSend){

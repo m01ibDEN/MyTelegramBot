@@ -10,7 +10,7 @@ public class Game {
 
     private static String grid;
 
-    private static HashSet<Integer> freeSqrs = new HashSet<>();
+    private static final HashSet<Integer> freeSqrs = new HashSet<>();
 
     public static String getX() {
         return x;
@@ -22,10 +22,6 @@ public class Game {
 
     public static String getGrid() {
         return grid;
-    }
-
-    public static HashSet<Integer> getFreeSqrs() {
-        return freeSqrs;
     }
 
     public static void setSquare(int number, String symbol) {
@@ -67,11 +63,13 @@ public class Game {
         for(int i = 1; i < 10; i++) freeSqrs.add(i);
         x = "X";
         o = "O";
-        grid = "  1 | 2 | 3 \n" +
-                "----+---+---\n" +
-                "  4 | 5 | 6 \n" +
-                "----+---+---\n" +
-                "  7 | 8 | 9 \n";
+        grid = """
+                  1 | 2 | 3\s
+                ----+---+---
+                  4 | 5 | 6\s
+                ----+---+---
+                  7 | 8 | 9\s
+                """;
 
     }
 

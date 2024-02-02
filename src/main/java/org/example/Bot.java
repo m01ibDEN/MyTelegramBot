@@ -7,106 +7,128 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
-import java.util.HashMap;
-import java.util.Objects;
+import java.util.*;
 
 public class Bot extends TelegramLongPollingBot {
-
-    HashMap<String, String> users = new HashMap<>();
-    boolean isXO = false;
-    String mess = "Это игра в крестики-нолики внутри моего бота в телеграм\n"
-            + "Клетки пронумерованы от 1 до 9 слева сверху до права снизу\n"
-            + "Чтобы сходить вы должны проосто написать номер свободной клетки)\n";
+    static HashMap<Long, String> users = new HashMap<>();
+    boolean isXOWithBot = false;
+    boolean isXOWithUser = false;
+    boolean agreement = false;
+    long idByGamer1 = 0, idByGamer2 = 0;
+    String mess = """
+            Это игра в крестики-нолики внутри моего бота в телеграм
+            Клетки пронумерованы от 1 до 9 слева сверху до права снизу
+            Чтобы сходить вы должны проосто написать номер свободной клетки).
+            """;
     int move = 1;
+    boolean inputUser = false;
 
     @Override
     public void onUpdateReceived(Update update) {
-
         var msg = update.getMessage();
-        users.put(msg.getChatId().toString(), msg.getFrom().getUserName());
+        users.put(msg.getChatId(), msg.getFrom().getUserName());
 
-        if (isXO) {
+        System.out.println(users.toString());
+        if (isXOWithBot) {
             if(move == 1) {
                 if (Character.isDigit(msg.getText().toCharArray()[0])) {
                     Game.setSquare(Integer.parseInt(msg.getText()), Game.getX());
                     Game.botAction();
-                    try {
-                        execute(SendMessage.builder().chatId(msg.getChatId()).text(Game.getGrid()).build());
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
+                    sendMessage(msg.getChatId(), Game.getGrid());
                     move++;
                 }
 
                 if (msg.getText().equals("y")) {
-                    try {
-                        execute(SendMessage.builder().chatId(msg.getChatId()).text(Game.getGrid()).build());
-                        execute(SendMessage.builder().chatId(msg.getChatId()).text("Введите номер клетки").build());
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
+                    sendMessage(msg.getChatId(), Game.getGrid());
+                    sendMessage(msg.getChatId(), "Введите номер клетки.");
                 }
+
                 if (msg.getText().equals("n")) {
                     Game.botAction();
-                    try {
-                        execute(SendMessage.builder().chatId(msg.getChatId()).text(Game.getGrid()).build());
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
+                    sendMessage(msg.getChatId(), Game.getGrid());
                     move++;
                 }
             }
 
             else {
-                try {
-                    Game.setSquare(Integer.parseInt(msg.getText()), Game.getX());
-                    Game.botAction();
-                    execute(SendMessage.builder().chatId(msg.getChatId()).text(Game.getGrid()).build());
-                } catch (TelegramApiException e) {
-                    throw new RuntimeException(e);
-                }
-
-
+                Game.setSquare(Integer.parseInt(msg.getText()), Game.getX());
+                Game.botAction();
+                sendMessage(msg.getChatId(), Game.getGrid());
 
                 if (Game.end() != null) {
                     move = 1;
+
                     if(Objects.equals(Game.end(), "user")) {
-                        try {
-                            execute(SendMessage.builder().chatId(msg.getChatId()).text("Вы выиграли!").build());
-                        } catch (TelegramApiException e) {
-                            throw new RuntimeException(e);
-                        }
+                        sendMessage(msg.getChatId(), "Вы выиграли!");
                     }
 
                     else if (Objects.equals(Game.end(), "bot")) {
-                        try {
-                            execute(SendMessage.builder().chatId(msg.getChatId()).text("Вы проиграли(").build());
-                        } catch (TelegramApiException e) {
-                            throw new RuntimeException(e);
-                        }
+                        sendMessage(msg.getChatId(), "Вы проиграли(");
                     }
 
                     else if (Objects.equals(Game.end(), "none")) {
-                        try {
-                            execute(SendMessage.builder().chatId(msg.getChatId()).text("Ничья!").build());
-                        } catch (TelegramApiException e) {
-                            throw new RuntimeException(e);
-                        }
+                        sendMessage(msg.getChatId(), "Ничья!");
                     }
-                    isXO = false;
+                    isXOWithBot = false;
                 }
             }
         }
 
-        if(msg.isCommand() && msg.getText().equals("/game")) {
-            isXO = true;
-            try {
-                Game.setup();
-                execute(SendMessage.builder().chatId(msg.getChatId()).text(mess).build());
-                execute(SendMessage.builder().chatId(msg.getChatId()).text("Хотите сходить первым?(y/n)").build());
-            } catch (TelegramApiException e) {
-                throw new RuntimeException(e);
+
+        if (isXOWithUser) {
+            if (agreement) {
+                if (Character.isDigit(msg.getText().toCharArray()[0])) {
+                    if (msg.getChatId() == idByGamer1) {
+                        Game.setSquare(Integer.parseInt(msg.getText()), Game.getX());
+                        sendMessage(idByGamer2, Game.getGrid());
+                    }
+                    else {
+                        Game.setSquare(Integer.parseInt(msg.getText()), Game.getO());
+                        sendMessage(idByGamer1, Game.getGrid());
+                    }
+                }
+
+                if (msg.getText().equals("y")) {
+                    sendMessage(msg.getChatId(), Game.getGrid());
+                    sendMessage(msg.getChatId(), "Введите номер клетки.");
+                }
             }
+
+            if (inputUser) {
+                String username = msg.getText();
+                Long chatId = findIdByUserName(username);
+                if (chatId != null) {
+                    sendMessage(chatId, "С вами хочет поиграть " + msg.getFrom().getUserName());
+                    sendMessage(chatId, "Вы согласны?(y/n)");
+                    inputUser = false;
+                    agreement = true;
+                    idByGamer1 = chatId;
+                    idByGamer2 = msg.getChatId();
+                } else {
+                    sendMessage(msg.getChatId(), "Пользователь с таким именем не найден.");
+                }
+            }
+        }
+
+        if (msg.isCommand() && msg.getText().equals("/xo_with_bot")) {
+            isXOWithBot = true;
+            Game.setup();
+            sendMessage(msg.getChatId(), mess);
+            sendMessage(msg.getChatId(), "Хотите сходить первым?(y/n)");
+        }
+
+
+
+        if (msg.isCommand() && msg.getText().equals("/xo_with_user")) {
+            isXOWithUser = true;
+            Game.setup();
+            sendMessage(msg.getChatId(), users.values().toString());
+            sendMessage(msg.getChatId(),
+                                """
+                                Введите имя пользователя, с которым хотите сыграть.
+                                UPD: Пользователь должен также выбрать этот режим игры в меню.
+                                """);
+            inputUser = true;
         }
     }
 
@@ -118,6 +140,30 @@ public class Bot extends TelegramLongPollingBot {
     @Override
     public String getBotToken() {
         return "6207008509:AAFDFEobMskwz3Rt5GNo59INrid5a8BhhIw";
+    }
+
+    private void sendMessage(Long chatId, String textToSend){
+        SendMessage sendMessage = new SendMessage();
+        sendMessage.setChatId(String.valueOf(chatId));
+        sendMessage.setText(textToSend);
+        try {
+            execute(sendMessage);
+        } catch (TelegramApiException ignored) {
+
+        }
+    }
+
+    public static Long findIdByUserName(String name) {
+
+        Set<Map.Entry<Long, String>> entrySet = users.entrySet();
+
+        for (Map.Entry<Long, String> pair : entrySet) {
+            if (name.equals(pair.getValue())) {
+                System.out.println("+");
+                return pair.getKey();
+            }
+        }
+        return null;
     }
 
     public static void main(String[] args) throws TelegramApiException {

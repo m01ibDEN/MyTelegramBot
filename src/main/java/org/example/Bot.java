@@ -177,7 +177,6 @@ public class Bot extends TelegramLongPollingBot {
         Set<Map.Entry<Long, String>> entrySet = users.entrySet();
         for (Map.Entry<Long, String> pair : entrySet) {
             if (name.equals(pair.getValue())) {
-                System.out.println("+");
                 return pair.getKey();
             }
         }
